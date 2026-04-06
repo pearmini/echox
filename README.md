@@ -2,9 +2,6 @@
 
 <img src="./docs/public/logo.png" width="100"/>
 
-> [!NOTE]
-> Work in progress. The APIs are not stable right now.
-
 A lightweight reactive UI framework for declarative DOM manipulation, alternative to React, Vue and jQuery for small projects.
 
 ```js
@@ -25,10 +22,9 @@ const counter = html.div([
 document.body.appendChild(counter);
 ```
 
-## Resources 📚
+## Documentation 📚
 
-- Documentation - https://echox.dev/
-- Features - https://echox.dev/docs/what-is-echox
+https://echox.dev/
 
 ## License 📄
 
