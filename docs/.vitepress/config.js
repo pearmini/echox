@@ -9,30 +9,6 @@ export default defineConfig({
   appearance: false,
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      {text: "Docs", link: "/docs/what-is-echox"},
-      // {text: "Blogs", link: "/blog/index"},
-    ],
-    sidebar: {
-      "/docs": [
-        {
-          text: "Introduction",
-          items: [
-            {text: "What is EchoX", link: "/docs/what-is-echox"},
-            {text: "Getting Started", link: "/docs/getting-started"},
-            {text: "API Index", link: "/docs/api-index"},
-          ],
-        },
-        {
-          text: "Reference",
-          items: [
-            {text: "EchoX DOM", link: "/docs/echox-dom"},
-            {text: "EchoX Reactive", link: "/docs/echox-reactive"},
-          ],
-        },
-      ],
-      "/blog/": [],
-    },
     socialLinks: [{icon: "github", link: "https://github.com/blinkblinkhq/echox"}],
     footer: {
       message: "Released under the MIT License.",
