@@ -69,8 +69,7 @@ Apply fine-grained state observation, allowing independently update, minimizing 
 EchoX exports one method _reactive_ for reactivity. For example, let's make the counter interactive:
 
 ```js
-const [scope] = ex
-  .reactive()
+const [scope] = reactive()
   .state("value", 0)
   .computed("double", (d) => d.value * 2)
   .effect((d) => console.log(d.value, d.double))
@@ -79,11 +78,11 @@ const [scope] = ex
 const dom = html.div([
   html.button({onclick: () => scope.value++}, ["👍"]),
   html.button({onclick: () => scope.value--}, ["👎"]),
-  html.span([() => state.double]),
+  html.span([() => scope.double]),
 ]);
 ```
 
-_EchoX.reactive_ returns a reactive scope, where stores the states you defined. Then you can bind states with the attributes or child nodes of DOMs using _use_. This is the _reactive_ in the philosophy.
+_EchoX.reactive_ returns a reactive scope that holds the states you defined. You bind them in DOM by using functions for attributes, styles, or children so reads track dependencies. This is the _reactive_ in the philosophy.
 
 Please refer to [EchoX Reactive](#reactive) for more information.
 
@@ -163,12 +162,74 @@ EchoX is also available as a UMD bundle for legacy browsers.
 
 ## **html.[tagName](_[attributes,] children_)** {#html}
 
+`html` is a proxy: each property is a tag factory (for example `html.div`, `html.span`). Calling `html(tagNamespace)` returns another proxy that creates elements in that namespace—useful for SVG:
+
+```js
+const svg = html("http://www.w3.org/2000/svg");
+svg.circle({cx: 50, cy: 50, r: 40});
+```
+
+For a given tag, the signature is **`tagName(attributes?, children?)`**. If the first argument is a plain object, it is treated as **attributes** and the second argument is **children**; otherwise the first argument is **children** and attributes default to `{}`.
+
+- **Children** are flattened (nested arrays are supported). Values that are not mountable are skipped (`null`, `undefined`, `false`); **`0` is kept** and rendered as text. Primitives become text nodes; existing DOM nodes are inserted as-is. A **function** child is reactive: it is re-run when tracked state changes, and its return value (nodes, text, arrays, or `null`) replaces that fragment.
+
+- **Attributes** map to DOM properties or attributes. Values may be static or **functions** that read reactive state; those update when dependencies change. A **`style`** object sets inline styles; each style field may also be a function. Keys starting with **`on`** are registered as event listeners (`onclick`, …).
+
+```js
+html.p(["Hello", html.em(["EchoX"])]);
+```
+
 ## **reactive()** {#reactive}
+
+Returns a **builder** (`Reactive`) used to declare state and effects. Chain **`.state`**, **`.computed`**, and **`.effect`**, then call **`.join()`** to materialize a live **scope** object. Definition order between `state` and `computed` does not matter.
+
+```js
+const rx = reactive();
+rx.state("n", 0).computed("double", (s) => s.n * 2);
+```
 
 ## _reactive_.**state(_key, value_)** {#reactive-state}
 
+Registers a **state** named `key` with initial `value`. After `join()`, the scope exposes `key` as a readable and assignable property; assignments schedule updates to any `computed`, `html` bindings, and `effect`s that depend on that state.
+
+```js
+reactive().state("count", 0).state("label", "go");
+```
+
 ## _reactive_.**computed(_key, define_)** {#reactive-computed}
+
+Registers a **derived** state under `key`. `define` is a function `(scope) => value` that reads other fields on `scope`. Computed values are recomputed when their dependencies change (lazily on read, with updates batched so a dependency change does not run the same computed more than once per flush).
+
+```js
+reactive()
+  .state("x", 2)
+  .computed("area", (s) => s.x * s.x);
+```
 
 ## _reactive_.**effect(_effect_)** {#reactive-effect}
 
+Registers a side effect. Effects run **after `join()`**, and again when any state read inside the effect changes. If `effect(scope)` **returns a function**, that function is treated as a **cleanup** and is called when the dispose function from `join()` runs (see below). Non-function return values are ignored.
+
+```js
+reactive()
+  .state("n", 0)
+  .effect((s) => {
+    console.log("n =", s.n);
+    return () => console.log("cleanup");
+  });
+```
+
 ## _reactive_.**join()** {#reactive-join}
+
+Builds the reactive **scope** from the declared `state` and `computed` entries, runs all **effects** once, and returns a tuple **`[scope, dispose]`**.
+
+- **`scope`**: proxy whose properties correspond to state and computed keys.
+
+- **`dispose`**: call with no arguments to run every cleanup function returned from an **effect** (useful for tearing down subscriptions or manual DOM work).
+
+```js
+const [scope, dispose] = reactive().state("n", 0).effect((s) => s.n).join();
+
+scope.n = 1;
+dispose();
+```
